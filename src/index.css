@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Luxe Art Gallery Design System */
+
+@layer base {
+  :root {
+    /* Dark luxury palette */
+    --background: 240 10% 6%;
+    --foreground: 45 20% 95%;
+
+    --card: 240 8% 10%;
+    --card-foreground: 45 20% 95%;
+
+    --popover: 240 8% 12%;
+    --popover-foreground: 45 20% 95%;
+
+    /* Gold accent as primary */
+    --primary: 43 74% 49%;
+    --primary-foreground: 240 10% 6%;
+
+    --secondary: 240 6% 18%;
+    --secondary-foreground: 45 15% 85%;
+
+    --muted: 240 5% 16%;
+    --muted-foreground: 45 10% 60%;
+
+    --accent: 43 60% 40%;
+    --accent-foreground: 45 20% 95%;
+
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 45 20% 95%;
+
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 43 74% 49%;
+
+    --radius: 0.375rem;
+
+    /* Custom tokens */
+    --gold: 43 74% 49%;
+    --gold-light: 43 80% 65%;
+    --gold-dark: 43 70% 35%;
+    --cream: 45 30% 90%;
+    --charcoal: 240 8% 12%;
+    --charcoal-light: 240 6% 18%;
+
+    /* Gradients */
+    --gradient-gold: linear-gradient(135deg, hsl(43 74% 49%), hsl(43 80% 65%));
+    --gradient-dark: linear-gradient(180deg, hsl(240 10% 6%), hsl(240 8% 10%));
+    --gradient-card-hover: linear-gradient(180deg, hsl(240 8% 12%), hsl(240 6% 15%));
+
+    /* Shadows */
+    --shadow-gold: 0 4px 30px -5px hsl(43 74% 49% / 0.3);
+    --shadow-card: 0 10px 40px -10px hsl(0 0% 0% / 0.5);
+    --shadow-hover: 0 20px 50px -10px hsl(0 0% 0% / 0.7);
+
+    /* Transitions */
+    --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Sidebar tokens */
+    --sidebar-background: 240 8% 8%;
+    --sidebar-foreground: 45 15% 85%;
+    --sidebar-primary: 43 74% 49%;
+    --sidebar-primary-foreground: 240 10% 6%;
+    --sidebar-accent: 240 6% 15%;
+    --sidebar-accent-foreground: 45 15% 85%;
+    --sidebar-border: 240 5% 18%;
+    --sidebar-ring: 43 74% 49%;
+  }
+
+  .dark {
+    /* Same as root - dark theme by default */
+    --background: 240 10% 6%;
+    --foreground: 45 20% 95%;
+    --card: 240 8% 10%;
+    --card-foreground: 45 20% 95%;
+    --popover: 240 8% 12%;
+    --popover-foreground: 45 20% 95%;
+    --primary: 43 74% 49%;
+    --primary-foreground: 240 10% 6%;
+    --secondary: 240 6% 18%;
+    --secondary-foreground: 45 15% 85%;
+    --muted: 240 5% 16%;
+    --muted-foreground: 45 10% 60%;
+    --accent: 43 60% 40%;
+    --accent-foreground: 45 20% 95%;
+    --destructive: 0 62.8% 50%;
+    --destructive-foreground: 45 20% 95%;
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 43 74% 49%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', serif;
+    @apply font-medium tracking-tight;
+  }
+}
+
+@layer components {
+  .gold-text {
+    @apply text-primary;
+  }
+
+  .gold-gradient-text {
+    background: linear-gradient(135deg, hsl(43 74% 49%), hsl(43 80% 65%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .card-hover {
+    @apply transition-all duration-500;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .image-zoom {
+    @apply transition-transform duration-700 ease-out;
+  }
+
+  .image-zoom:hover {
+    transform: scale(1.08);
+  }
+
+  .btn-gold {
+    @apply bg-primary text-primary-foreground font-medium tracking-wide
+           transition-all duration-300 hover:shadow-lg;
+  }
+
+  .btn-gold:hover {
+    box-shadow: var(--shadow-gold);
+    transform: translateY(-2px);
+  }
+
+  .btn-outline-gold {
+    @apply border border-primary text-primary bg-transparent
+           transition-all duration-300 hover:bg-primary hover:text-primary-foreground;
+  }
+
+  .divider-gold {
+    @apply h-px w-16 bg-gradient-to-r from-transparent via-primary to-transparent;
+  }
+
+  .overlay-gradient {
+    background: linear-gradient(to top, hsl(240 10% 6% / 0.9) 0%, transparent 60%);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.8s ease-out forwards;
+  }
+
+  .animate-fade-up {
+    animation: fadeUp 0.8s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeUp {
+    from { 
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to { 
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from { 
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to { 
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animation-delay-100 { animation-delay: 0.1s; }
+  .animation-delay-200 { animation-delay: 0.2s; }
+  .animation-delay-300 { animation-delay: 0.3s; }
+  .animation-delay-400 { animation-delay: 0.4s; }
+  .animation-delay-500 { animation-delay: 0.5s; }
+}
