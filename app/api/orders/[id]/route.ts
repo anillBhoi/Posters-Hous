@@ -6,7 +6,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -30,8 +30,7 @@ export async function GET(
       .eq('id', user.id)
       .single();
 
-    const { id } = params;
-
+    const { id } = await context.params;
     let query = supabase
       .from('orders')
       .select(`
@@ -67,7 +66,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: any
 ) {
   try {
     const authHeader = request.headers.get('authorization');
@@ -95,7 +94,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { id } = params;
+    const { id } = await context.params;
     const body = await request.json();
 
     const { data: order, error } = await supabase

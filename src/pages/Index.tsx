@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import { ArrowRight, Truck, Shield, Award } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { PosterGrid } from "@/components/posters/PosterGrid";
@@ -34,10 +34,10 @@ export default function Index() {
             </p>
             <div className="flex flex-wrap gap-4 opacity-0 animate-fade-up" style={{ animationDelay: "0.4s", animationFillMode: "forwards" }}>
               <Button asChild size="lg" className="btn-gold h-12 px-8">
-                <Link to="/gallery">Explore Collection <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                <Link href="/gallery">Explore Collection <ArrowRight className="ml-2 h-4 w-4" /></Link>
               </Button>
               <Button asChild variant="outline" size="lg" className="h-12 px-8 border-foreground/20 hover:bg-foreground/5">
-                <Link to="/about">Our Story</Link>
+                <Link href="/about">Our Story</Link>
               </Button>
             </div>
           </div>
@@ -74,7 +74,7 @@ export default function Index() {
           <PosterGrid posters={featuredPosters} columns={4} />
           <div className="text-center mt-12">
             <Button asChild variant="outline" size="lg" className="h-12 px-8">
-              <Link to="/gallery">View All Posters <ArrowRight className="ml-2 h-4 w-4" /></Link>
+              <Link href="/gallery">View All Posters <ArrowRight className="ml-2 h-4 w-4" /></Link>
             </Button>
           </div>
         </div>
@@ -89,7 +89,7 @@ export default function Index() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             {categories.map((cat) => (
-              <Link key={cat.id} to={`/gallery?category=${cat.slug}`} className="group p-6 bg-secondary/50 rounded-lg text-center hover:bg-secondary transition-colors">
+              <Link key={cat.id} href={`/gallery?category=${cat.slug}`} className="group p-6 bg-secondary/50 rounded-lg text-center hover:bg-secondary transition-colors">
                 <h3 className="font-serif text-lg font-medium group-hover:text-primary transition-colors">{cat.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{cat.description}</p>
               </Link>
