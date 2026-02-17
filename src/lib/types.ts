@@ -1,32 +1,37 @@
-export interface PosterSize {
+// src/lib/types.ts
+import type { StaticImageData } from "next/image";
+
+export type PosterImage = string | StaticImageData;
+
+export type PosterSize = {
   name: string;
   dimensions: string;
   price: number;
-}
+};
 
-export interface Poster {
+export type Poster = {
   id: string;
   title: string;
   artist: string;
   description: string;
   category: string;
-  image: string;
+  image: PosterImage; // ✅ supports local imports + URL strings
   sizes: PosterSize[];
   tags: string[];
   isFeatured?: boolean;
   isNew?: boolean;
-}
+};
 
-export interface CartItem {
-  poster: Poster;
-  selectedSize: PosterSize;
-  quantity: number;
-}
-
-export interface Category {
+export type Category = {
   id: string;
   name: string;
   slug: string;
   description: string;
-  image_url?: string;
-}
+  image_url: string;
+};
+
+export type CartItem = {
+  poster: Poster;
+  selectedSize: PosterSize;
+  quantity: number;
+};

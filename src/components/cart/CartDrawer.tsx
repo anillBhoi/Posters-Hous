@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
+import Image from "next/image";
+
 
 export function CartDrawer() {
   const { items, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, totalPrice } = useCart();
@@ -41,13 +43,16 @@ export function CartDrawer() {
                   key={`${item.poster.id}-${item.selectedSize.name}`}
                   className="flex gap-4 p-4 bg-secondary/30 rounded-lg"
                 >
-                  <div className="h-24 w-20 rounded overflow-hidden flex-shrink-0">
-                    <img
-                      src={item.poster.image}
-                      alt={item.poster.title}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
+                <div className="relative h-24 w-20 rounded overflow-hidden flex-shrink-0">
+  <Image
+    src={item.poster.image}
+    alt={item.poster.title}
+    fill
+    sizes="80px"
+    className="object-cover"
+  />
+</div>
+
                   <div className="flex-1 min-w-0">
                     <h4 className="font-serif font-medium text-foreground truncate">
                       {item.poster.title}

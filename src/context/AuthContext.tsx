@@ -1,165 +1,128 @@
-"use client";
+"use client"
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session, AuthError } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+// src/context/AuthContext.tsx
+import React, { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import type { AuthError, Session, User } from "@supabase/supabase-js"
+import { toast } from "sonner"
+import { supabase } from "@/integrations/supabase/client"
+import type { Database } from "@/types/supabase"
 
-interface Profile {
-  id: string;
-  email: string;
-  full_name: string | null;
-  phone: string | null;
-  role: "user" | "admin";
-  avatar_url: string | null;
-}
+type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"]
+type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"]
 
 interface AuthContextType {
-  user: User | null;
-  profile: Profile | null;
-  session: Session | null;
-  loading: boolean;
-  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
-  signInWithGoogle: () => Promise<void>;
-  signOut: () => Promise<void>;
-  resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
-  updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
-  isAdmin: boolean;
+  user: User | null
+  profile: ProfileRow | null
+  session: Session | null
+  loading: boolean
+  signUp: (email: string, password: string, fullName?: string) => Promise<{ error: AuthError | null }>
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signInWithGoogle: () => Promise<void>
+  signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<{ error: AuthError | null }>
+  updateProfile: (updates: ProfileUpdate) => Promise<{ error: Error | null }>
+  isAdmin: boolean
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id, session.user.email);
-      } else {
-        setLoading(false);
-      }
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id, session.user.email);
-      } else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<ProfileRow | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
-      // Check current session first
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      console.log("Fetching profile - Current session:", {
-        userId: userId,
-        sessionUserId: currentSession?.user?.id,
-        sessionEmail: currentSession?.user?.email,
-        sessionMatches: currentSession?.user?.id === userId
-      });
-
-      // Try fetching by ID first
+      // 1) Fetch by id (primary path)
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
+        .single<ProfileRow>()
 
-      if (error) {
-        // Better error logging
-        const errorDetails = {
-          message: error?.message || 'No message',
-          code: error?.code || 'No code',
-          details: error?.details || 'No details',
-          hint: error?.hint || 'No hint',
-          userId: userId,
-          userEmail: userEmail,
-          errorType: error?.constructor?.name || 'Unknown',
-          errorString: String(error),
-          errorKeys: Object.keys(error || {})
-        };
-        
-        console.error("Error fetching profile by ID:", errorDetails);
-        
-        // If RLS error (PGRST116) or not found, try fetching by email as fallback
-        if (userEmail && (error?.code === 'PGRST116' || error?.code === 'PGRST301')) {
-          console.log("Attempting to fetch profile by email as fallback...");
-          const { data: emailData, error: emailError } = await supabase
-            .from("profiles")
-            .select("*")
-            .eq("email", userEmail)
-            .single();
-          
-          if (emailError) {
-            console.error("Error fetching profile by email:", {
-              message: emailError?.message,
-              code: emailError?.code,
-              details: emailError?.details,
-              email: userEmail
-            });
-            throw emailError;
-          }
-          
-          if (emailData) {
-            console.log("Profile loaded by email fallback:", { 
-              id: emailData.id, 
-              email: emailData.email, 
-              role: emailData.role 
-            });
-            setProfile(emailData as Profile);
-            return;
-          }
+      if (!error && data) {
+        setProfile(data)
+        return
+      }
+
+      // If not found / RLS / etc., optionally fallback to email
+      if (userEmail) {
+        const { data: emailData, error: emailError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("email", userEmail)
+          .single<ProfileRow>()
+
+        if (!emailError && emailData) {
+          setProfile(emailData)
+          return
         }
-        
-        throw error;
+
+        // Log fallback error (but don't hard-fail the app)
+        if (emailError) {
+          console.error("Profile fetch by email failed:", {
+            message: emailError.message,
+            code: (emailError as any).code,
+            details: (emailError as any).details,
+            hint: (emailError as any).hint,
+          })
+        }
       }
-      
-      if (data) {
-        console.log("Profile loaded successfully:", { 
-          id: data.id, 
-          email: data.email, 
-          role: data.role 
-        });
-        setProfile(data as Profile);
-      } else {
-        console.warn("No profile data returned for user:", userId);
+
+      // Log primary error
+      if (error) {
+        console.error("Profile fetch by id failed:", {
+          message: error.message,
+          code: (error as any).code,
+          details: (error as any).details,
+          hint: (error as any).hint,
+        })
       }
-    } catch (error: any) {
-      // Enhanced error logging
-      const errorInfo = {
-        errorType: error?.constructor?.name,
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        stack: error?.stack,
-        stringified: JSON.stringify(error, Object.getOwnPropertyNames(error)),
-        allKeys: error ? Object.keys(error) : []
-      };
-      console.error("Error fetching profile (catch block):", errorInfo);
-      // Don't set profile to null, keep existing if any
+    } catch (e) {
+      console.error("fetchProfile unexpected error:", e)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    // Initial session
+    supabase.auth
+      .getSession()
+      .then(({ data }) => {
+        const sess = data.session
+        setSession(sess)
+        setUser(sess?.user ?? null)
+
+        if (sess?.user) {
+          fetchProfile(sess.user.id, sess.user.email ?? undefined)
+        } else {
+          setLoading(false)
+        }
+      })
+      .catch((e) => {
+        console.error("getSession error:", e)
+        setLoading(false)
+      })
+
+    // Auth changes
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+      setSession(sess)
+      setUser(sess?.user ?? null)
+
+      if (sess?.user) {
+        setLoading(true)
+        await fetchProfile(sess.user.id, sess.user.email ?? undefined)
+      } else {
+        setProfile(null)
+        setLoading(false)
+      }
+    })
+
+    return () => authListener.subscription.unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     try {
@@ -167,121 +130,101 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         password,
         options: {
-          data: {
-            full_name: fullName || "",
-          },
+          data: { full_name: fullName ?? "" },
         },
-      });
+      })
 
       if (error) {
-        toast.error(error.message);
-        return { error };
+        toast.error(error.message)
+        return { error }
       }
 
-      if (data.user) {
-        toast.success("Account created! Please check your email to verify your account.");
-      }
-
-      return { error: null };
-    } catch (error) {
-      const authError = error as AuthError;
-      toast.error(authError.message || "Failed to create account");
-      return { error: authError };
+      // If confirm email is ON, this is expected
+      if (data.user) toast.success("Account created. Check your email for verification (if enabled).")
+      return { error: null }
+    } catch (e) {
+      const authError = e as AuthError
+      toast.error(authError.message || "Failed to create account")
+      return { error: authError }
     }
-  };
+  }
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
+      const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
-        toast.error(error.message);
-        return { error };
+        toast.error(error.message)
+        return { error }
       }
-
-      toast.success("Welcome back!");
-      return { error: null };
-    } catch (error) {
-      const authError = error as AuthError;
-      toast.error(authError.message || "Failed to sign in");
-      return { error: authError };
+      toast.success("Welcome back!")
+      return { error: null }
+    } catch (e) {
+      const authError = e as AuthError
+      toast.error(authError.message || "Failed to sign in")
+      return { error: authError }
     }
-  };
+  }
 
   const signInWithGoogle = async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (error) {
-        toast.error(error.message);
-      }
-    } catch (error) {
-      toast.error("Failed to sign in with Google");
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      })
+      if (error) toast.error(error.message)
+    } catch {
+      toast.error("Failed to sign in with Google")
     }
-  };
+  }
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      toast.success("Signed out successfully");
-    } catch (error) {
-      toast.error("Failed to sign out");
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      toast.success("Signed out successfully")
+    } catch {
+      toast.error("Failed to sign out")
     }
-  };
+  }
 
   const resetPassword = async (email: string) => {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
-      });
+      })
 
       if (error) {
-        toast.error(error.message);
-        return { error };
+        toast.error(error.message)
+        return { error }
       }
 
-      toast.success("Password reset email sent! Check your inbox.");
-      return { error: null };
-    } catch (error) {
-      const authError = error as AuthError;
-      toast.error(authError.message || "Failed to send reset email");
-      return { error: authError };
+      toast.success("Password reset email sent! Check your inbox.")
+      return { error: null }
+    } catch (e) {
+      const authError = e as AuthError
+      toast.error(authError.message || "Failed to send reset email")
+      return { error: authError }
     }
-  };
+  }
 
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) {
-      return { error: new Error("Not authenticated") };
-    }
+  const updateProfile = async (updates: ProfileUpdate) => {
+    if (!user) return { error: new Error("Not authenticated") }
 
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update(updates)
-        .eq("id", user.id);
+      const { error } = await supabase.from("profiles").update(updates).eq("id", user.id)
+      if (error) throw error
 
-      if (error) throw error;
-
-      await fetchProfile(user.id);
-      toast.success("Profile updated successfully");
-      return { error: null };
-    } catch (error) {
-      const err = error as Error;
-      toast.error(err.message || "Failed to update profile");
-      return { error: err };
+      await fetchProfile(user.id, user.email ?? undefined)
+      toast.success("Profile updated successfully")
+      return { error: null }
+    } catch (e) {
+      const err = e as Error
+      toast.error(err.message || "Failed to update profile")
+      return { error: err }
     }
-  };
+  }
 
-  const isAdmin = profile?.role === "admin";
+  const isAdmin = useMemo(() => profile?.role === "admin", [profile?.role])
 
   return (
     <AuthContext.Provider
@@ -301,14 +244,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error("useAuth must be used within an AuthProvider")
+  return ctx
 }
-
